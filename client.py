@@ -8,6 +8,7 @@ import threading
 CONNECT = 0
 #status = StringVar()
 #status.set("idle")
+
 s = socket(AF_INET,SOCK_STREAM)
 root = Tk()
 def close():
@@ -111,15 +112,22 @@ def download(listbox):
 	peerPort = int(peer[1]) + 1
 	filename = fillist[1].split("/")[len(fillist[1].split("/")) - 1]
 	d = socket(AF_INET,SOCK_STREAM)
-	d.connect((peerIp,peerPort))
-	print "connected to peer"
-	d.send(fillist[1])
-	f = open(filename, 'wb')
-	l = d.recv(1024)
-	while (l):   
-	   	f.write(l)
-        l = d.recv(1024)
-	f.close()
+	try:
+		d.connect((peerIp,peerPort))
+		print "connected to peer"
+		d.send(fillist[1])
+		f = open(filename+"_"+peerIp+"Dwonload", 'wb')
+		l = d.recv(1024)
+		while l:   
+			f.write(l)
+			l = d.recv(1024)
+		f.close()
+	except Exception,e:
+		tkMessageBox.showwarning(
+            "Search",
+            "Something\'s wrong. Exception type is %s" % `e`
+        )
+		return
 
 
 
@@ -141,13 +149,16 @@ def search():
 					path = fillist[2]
 					listbox.insert(END, peer+'      '+path)
 				buttonDownload = Button(root, text="Download", width=5, command=lambda: download(listbox))
-				buttonDownload.grid(row=7,column=1)	
-				#listbox.bind("<Double-Button-1>", download)
-			#TODO receive the data and display to user
+				buttonDownload.grid(row=7,column=1)
+			else:
+				tkMessageBox.showwarning(
+	            	"Search",
+	            	"No such file by other peers"
+	        	)		
 		except Exception,e:
 			tkMessageBox.showwarning(
 	            "Search",
-	            "Something\'s wrong with. Exception type is %s" % `e`
+	            "Something\'s wrong. Exception type is %s" % `e`
 	        )
 			return
 
@@ -167,48 +178,25 @@ def peer_server():
 	p.bind(("",s.getsockname()[1]+1))
 	p.listen(5)
 	while True: 
-	        #if i==1:
-	         #       print "keyboard interrupt encountered. Closing all connecitons"
-	          #     c.close 
-	           #     sys.exit(0)
 		c,a=p.accept()
 		print "received connection from ",a[0]
 		path2file = c.recv(1024)
-		f=open (path2file, "rb")
-		l = f.read(1024)
-		while l:
-			c.send(l)
-			l=f.read(1024)
-		f.close()	
-		c.close()	
-
-
+		print path2file
+		try:
+			f=open(path2file, "rb")
+			l = f.read(1024)
+			while len(l):
+				c.send(l)
+				l=f.read(1024)
+				print "sent 1024 bytes"
+			print "EOF"	
+			f.close()	
+			c.close()	
+		except Exception,e:	
+			tkMessageBox.showwarning(
+            "Search",
+            "Something\'s wrong. Exception type is %s" % `e`
+        )
+		return
 
 root.mainloop()
-
-
-
-
-
-
-
-
-
-'''
-while True:
-	print "give input as 1, 2 , 3 where\n1- Query for a file\n2-Share files\n3-end connection"
-	userInput = (int)raw_input("Enter something: ")
-	if(userInput == 1):
-		query = raw_input("Enter the file name")
-		s.send("Query "+query)
-	elif(userInput == 2):
-		while True:
-			filename = raw_input("Enter <filename> space <path to file> or enter 0 if no more files")
-			if((int)filename == 0)	
-				break
-			else
-				s.send("file "+filename)	
-	elif(userInput == 3):	
-		s.close()
-		break
-'''		
