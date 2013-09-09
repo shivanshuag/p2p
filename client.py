@@ -9,6 +9,7 @@ CONNECT = 0
 
 s = socket(AF_INET,SOCK_STREAM)
 root = Tk()
+root.title("p2p")
 def close():
         s.close()
         root.quit()
