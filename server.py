@@ -3,12 +3,18 @@ import Queue
 import signal
 import sys
 import sqlite3
+import re
 from socket import *
+
+
+def regexp(expr, item):
+        reg = re.compile(expr)
+        return reg.search(item) is not None
 
 def signal_handler(signal,frame):
         global i
         print "encountered interrupt ctrl+c"
-        i=1
+        i=1        
 
 def handle_tasks():
         while 1:
@@ -33,7 +39,7 @@ def handle_tasks():
                                 sock.send("files received")
                         if job[0] == '2':
                                 filename = job.split('\n')
-                                cursor.execute('SELECT * FROM files WHERE IP != ? AND Filename = ?',(a[0] + ":" + str(a[1]),filename[1]))        
+                                cursor.execute('SELECT * FROM files WHERE IP != ? AND Filename regexp ?',(a[0] + ":" + str(a[1]),filename[1]))        
                                 result = cursor.fetchone()
                                 send = ''
                                 while result != None:
@@ -65,6 +71,7 @@ q = Queue.PriorityQueue()
 s = socket(AF_INET,SOCK_STREAM)
 s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 conn = sqlite3.connect('p2p.db',check_same_thread = False)
+conn.create_function("regexp", 2, regexp)
 cursor =conn.cursor()
 #cursor.execute('CREATE TABLE IF NOT EXISTS peers(IP TEXT)')
 cursor.execute('CREATE TABLE IF NOT EXISTS files(IP TEXT, Filename TEXT, Path2file TEXT)')

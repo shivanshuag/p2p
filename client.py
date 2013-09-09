@@ -6,8 +6,6 @@ import tkFileDialog
 import tkMessageBox
 import threading
 CONNECT = 0
-#status = StringVar()
-#status.set("idle")
 
 s = socket(AF_INET,SOCK_STREAM)
 root = Tk()
@@ -172,6 +170,35 @@ def search():
 buttonSearch = Button(root, text="Search", width=5, command=search)
 buttonSearch.grid(row=5,column=2)
 
+def disconnect():
+	global s
+	s.close()
+	s = socket(AF_INET,SOCK_STREAM)
+
+buttonDisconnect = Button(root, text="Disconnect", width=10, command=disconnect)
+buttonDisconnect.grid(row=8,column=1)
+
+def handle_client(c,a):
+	print "inside thread"
+	path2file = c.recv(1024)
+	print path2file
+	try:
+		f=open(path2file, "rb")
+		l = f.read(1024)
+		while len(l):
+			c.send(l)
+			l=f.read(1024)
+			print "sent 1024 bytes"
+		print "EOF"	
+		f.close()	
+		c.close()	
+	except Exception,e:	
+		tkMessageBox.showwarning(
+        "Search",
+        "Something\'s wrong. Exception type is %s" % `e`
+    )
+	return
+
 def peer_server():
 	print "peer server started"
 	p = socket(AF_INET,SOCK_STREAM)
@@ -180,23 +207,12 @@ def peer_server():
 	while True: 
 		c,a=p.accept()
 		print "received connection from ",a[0]
-		path2file = c.recv(1024)
-		print path2file
-		try:
-			f=open(path2file, "rb")
-			l = f.read(1024)
-			while len(l):
-				c.send(l)
-				l=f.read(1024)
-				print "sent 1024 bytes"
-			print "EOF"	
-			f.close()	
-			c.close()	
-		except Exception,e:	
-			tkMessageBox.showwarning(
-            "Search",
-            "Something\'s wrong. Exception type is %s" % `e`
-        )
-		return
+		thr = threading.Thread(target=handle_client, args=(c,a))
+		print "1"
+		thr.daemon = True
+		print "2"
+		thr.start()
+		print "3"
+		
 
 root.mainloop()
